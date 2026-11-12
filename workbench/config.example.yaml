@@ -1,0 +1,57 @@
+﻿# SiPho EOE headless workbench — example config
+# Copy to config.yaml and edit paths for your machine.
+# Do not commit a config.yaml that contains private paths if you care; this file is the template.
+
+workroot: C:\Users\<you>\Documents\sipho_link
+hpeesof_dir: C:\Program Files\Keysight\ADS2027
+python: C:\Program Files\Keysight\ADS2027\tools\python\python.exe
+
+wrk: C:\Users\<you>\Documents\sipho_link\SiPho_PAM4_106G_EOE_wrk
+official_eoe_wrk: C:\Users\<you>\Documents\sipho_link\ref_examples\End_to_End_EOE_for_Ethernet_wrk\End_to_End_EOE_for_Ethernet_wrk
+
+link:
+  format: PAM4
+  bitrate_gbps: 106.25
+  baud_hz: 5.3125e10
+  wavelength_nm: 1310
+
+ami:
+  # Sample my_Ethernet PAM4 from the Keysight ADS Ethernet EOE example (not included in this repo).
+  # Copy my_Ethernet_Tx / my_Ethernet_Rx from your ADS example or wrk\data into these dirs.
+  # Do not use PCIe NRZ AMI.
+  tx_dir: C:\Users\<you>\Documents\sipho_link\SiPho_PAM4_106G_EOE_wrk\data\my_Ethernet_Tx
+  rx_dir: C:\Users\<you>\Documents\sipho_link\SiPho_PAM4_106G_EOE_wrk\data\my_Ethernet_Rx
+  tx_ibs: my_Ethernet_Tx.ibs
+  rx_ibs: my_Ethernet_Rx.ibs
+  tx_component: my_Ethernet_Tx
+  rx_component: my_Ethernet_Rx
+  passthrough_s4p: passthrough.s4p
+
+phase1:
+  n_bits: 5120
+  block_size: 256
+  pts_per_ui: 10
+  tx_mode: 1
+  tx_ignore_bits: 10
+  rx_ignore_bits: 64
+
+phase2:
+  n_ui: 4608
+  os_factor: 8
+  envelope_template: templates/sipho_envelope_phase2.net
+  pwl_target_points: 5000
+
+phase3:
+  n_bits: 4608
+  n_ui_min: 4480
+  discard_ui: 64
+  pts_per_ui: 10
+  measured: auto
+  fallback: true
+  use_second_measured: false
+
+tdecq:
+  enable: true
+
+paths:
+  results_root: C:\Users\<you>\Documents\sipho_link\results\eoe_workbench

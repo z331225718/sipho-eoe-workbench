@@ -1,0 +1,13 @@
+# EOE Workbench bundle patch.
+#
+# Mounts one inert host loader row naming this package. The runtime
+# client-modules service scans Loader entries, finds `dsh.client` and the
+# `./client` export, serves the browser half through /plugins, and the browser
+# half registers the sidebar panel + main page.
+#
+# The host half serves the local control API under /api/eoe: config defaults,
+# preflight, argv-array spawn of bin\run_eoe.cmd, live log/status, cancel,
+# artifacts and CSV eye-density data.
+- insert:
+    - id: eoe-workbench
+      name: "@local/dsh-eoe-workbench"

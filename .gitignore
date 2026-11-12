@@ -1,0 +1,15 @@
+﻿__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+Thumbs.db
+node_modules/
+sim/
+*.ds
+*.ckt
+*.ckt.out
+.run-test/
+.dsh-test/
+config.yaml
+*.log
+.venv/

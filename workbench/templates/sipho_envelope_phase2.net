@@ -1,0 +1,61 @@
+; SiPho PAM4 106G EOE workbench PHASE2 envelope template
+; Derived from sipho_link/netlists/sipho_envelope_link.net (Marvell-class CTLE ASSUMED)
+; PAM4_source replaced by VtDataset:SRC_TXAMI - filled by phase2_optics.py
+; Do not use this as a GUI BatchSimSweep net. Official Mode=5 BatchSim is not used.
+Options ResourceUsage=yes UseNutmegFormat=no EnableOptim=no TopDesignName="sipho_eoe_workbench:PHASE2_optics:netlist" DcopOutputNodeVoltages=yes DcopOutputPinCurrents=yes DcopOutputAllSweepPoints=no DcopOutputDcopType=0
+
+lambda=1310e-9
+flambda=c0/lambda
+baud=53125000000.0
+os_factor=8
+envbw=os_factor*baud
+tstep=1/envbw
+n_ui=4352
+tstop=n_ui/baud
+Vlow=0
+Vhigh=1.0
+
+HB:Env1 Freq[1]=flambda \
+ Order[1]=1 \
+  MaxOrder=4 StatusLevel=2 FundOversample=2 UseGear=yes EnvIntegOrder=2 \
+ EnvBandwidth=1 EnvWarnPoorFit=yes EnvUsePoorFit=yes EnvSkipDC_Fit=yes EnvSkipHarm_Fit=no SweepVar="time" DevOpPtLevel=0 \
+ EnvFitDisableCache=no SweepPlan="Env1_stim" OutputPlan="Env1_Output"
+
+OutputPlan:Env1_Output Type="Output" UseNodeNestLevel=yes NodeNestLevel=2 UseEquationNestLevel=yes EquationNestLevel=2 UseSavedEquationNestLevel=yes SavedEquationNestLevel=2 UseDeviceCurrentNestLevel=no DeviceCurrentDeviceType="All" DeviceCurrentSymSyntax=yes UseCurrentNestLevel=yes CurrentNestLevel=999 UseDeviceVoltageNestLevel=no DeviceVoltageNestLevel=0 DeviceVoltageDeviceType="All"
+
+SweepPlan:Env1_stim Stop=tstop Step=tstep
+Tran:Env1_tran HB_Sol=1 SteadyState=1 StatusLevel=3 Freq[1]=flambda Order[1]=1 OutputPlan="Env1_Output"
+Component:tahb_Env1 Module="ATAHB" Type="ModelExtractor" Tran_Analysis="Env1_tran" HB_Analysis="Env1"
+
+MZM_BW=26500000000.0
+
+; DRIVER ASSUMED Marvell IN10026DZ-class CTLE
+; VSum x3 VGA + HPF Fpass=26500000000.0 + VSum peaking_mult=1 + LPF 47000000000.0
+; peaking_mult scales HPF path (HPF Gain inert in Envelope)
+#uselib "ckt", "VtDataset"
+VtDataset:SRC_TXAMI N_pam 0 Dataset="__BRIDGE_DS__" Expression="n_drv" Tmax=__TMAX__ Freq=0 GHz Gain=1.0 Vdc=0 V Interpolation="linear" SaveCurrent=1 IsEOE=1
+#uselib "sml" , "VSum"
+VSum:G2  N_pam N_pam N_2x
+VSum:G3  N_2x N_pam N_3x
+#uselib "sml" , "HPF_PoleZero"
+HPF_PoleZero:CTLE_HPF  N_3x N_hpf Poles=list(-0.707+j*0.707, -0.707-j*0.707) Zeros=list(0) Gain=1.0 Fpass=26500000000.0 StopType="open" Z1=50 Ohm Z2=50 Ohm
+R:Rhpf  N_hpf 0 R=50 Ohm
+VSum:CTLE  N_3x N_hpf N_ctle
+#uselib "sml" , "LPF_PoleZero"
+LPF_PoleZero:BW1  N_ctle N_drv Poles=list(-0.707+j*0.707, -0.707-j*0.707) Gain=1.0 Fpass=47000000000.0 StopType="open" Z1=50 Ohm Z2=50 Ohm
+R:Rdrv  N_drv 0 R=50 Ohm
+V_Source:VB1  N_b1 0 Type="V_DC" Vdc=5.0 V SaveCurrent=1
+V_Source:VB2  N_rf2 0 Type="V_DC" Vdc=0.0 V SaveCurrent=1
+VSum:SUM1  N_b1 N_drv N_rf1
+
+optical_source:OptSrc1  N_opt_in Wavelength=lambda Power=3 mW Linewidth=0.001 Hz RIN=-160 dB Tstep=tstep
+#uselib "keysight_photonics_optical_source_component" , "optical_source_netlist.net_keysight_photonics_optical_source_component"
+MZM_behavioural:MZM1  N_opt_in N_mzm_out N_rf1 0 0 N_rf2 Length=100.0 um Wavelength=lambda V_pi=10 ExtinctionRatio=40 Bandwidth=MZM_BW InsertionLoss=1
+#uselib "keysight_photonics_MZM_behavioural_component" , "MZM_behavioural"
+SingleModeFiber:SMF1  N_mzm_out N_fiber_out Length=500 meter CoreRefractiveIndex=1.467 Loss=0.35 ModulationBandwidth=envbw Wavelength=lambda CoreDiameter=8.2e-06 meter CladdingRefractiveIndex=1.462 DispersionCoeff=0 DispersionSlope=0.09 SpectralWidth=5e-9 meter ModeFieldDiameter=9.2e-06 meter PolarizationModeDispersionCoeff=0.1 UserDefinedDispersion=1
+pd_behavioural:PD_TIA  N_fiber_out Vout Responsivity=0.77 Transimpedance_Gain=5500 Ohm Bandwidth=35e9 Thermal_Noise=1.9e-12 A Idark_Noise=0.3e-9 A K=1e-15 F=1.0
+Port:TermOut  Vout 0 Num=1 Z=50 Ohm Noise=yes
+#load "python","TDM_OpticalEye"
+ComponentWithNodes:Eye_Optical  N_fiber_out Type="ModelExtractor" Module="OpticalEye" DataRate=baud bps TimePoints=400 AmplitudeResolution=0.000001 Save_Density=yes Save_Waveform=yes SaveCarrierSignal=no SaveWaveformForOpticalToFile=no OpticalWaveformFile="opticalwaveform.txt"
+#load "python","TDM_Eye"
+ComponentWithNodes:Eye_TIA Vout Type="ModelExtractor" Module="Eye" Save_LevelMean=yes Save_HeightAtBER=no Save_Level1=yes Save_JitterRMS=no Save_Density=yes Save_RiseTime=no Save_Height=yes Save_Level0=yes Save_Width=yes Save_CheckMaskViolation=no Save_SNR=no Save_Amplitude=yes Save_HeightDB=no Save_FallTime=no Save_WidthAtBER=no Save_JitterPP=no Save_Bathtub=no Save_Waveform=yes Save_Contour=yes Save_CrossingLevel=no Save_ClockSignal=no LowerBoundary=40 UpperThreshold=80 DataRate=baud bps LowerThreshold=20 UpperBoundary=60 TimePoints=400 AmplitudeResolution=0.0001 V BERWidthHeight=1e-12 UseEyeMask=no BERContour=list(1e-12, 1e-11, 1e-10) ExtrapolateBER=no DisableTransientOutput=yes

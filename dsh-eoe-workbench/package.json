@@ -1,0 +1,33 @@
+{
+  "name": "@local/dsh-eoe-workbench",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "EOE Workbench for DSH: visual config, one-click SiPho PAM4 three-phase link simulation, live logs, results and eye diagrams.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [],
+      "external": [
+        "react"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    }
+  }
+}

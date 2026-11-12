@@ -1,0 +1,10 @@
+const fs=require('fs');
+const p='C:\\Users\\z3312\\AppData\\Local\\Programs\\DeepSeek Harness\\resources\\app.asar';
+const fd=fs.openSync(p,'r'); const head=Buffer.alloc(16); fs.readSync(fd,head,0,16,0);
+const headerSize=head.readUInt32LE(4), jsonLen=head.readUInt32LE(12); const json=Buffer.alloc(jsonLen); fs.readSync(fd,json,0,jsonLen,16); const tree=JSON.parse(json.toString('utf8')); const payloadStart=8+headerSize;
+function walk(node,prefix,out){for(const [k,v] of Object.entries(node.files||{})){const path=prefix?prefix+'/'+k:k; if(v.files) walk(v,path,out); else out.push({path,offset:Number(v.offset),size:v.size});}}
+const files=[]; walk(tree,'',files);
+function readPath(path){const e=files.find(f=>f.path===path); if(!e) throw new Error('not found '+path); const b=Buffer.alloc(e.size); fs.readSync(fd,b,0,e.size,payloadStart+e.offset); return b.toString('utf8');}
+const matches=files.filter(f=>/web-app\/lib\/startup/.test(f.path)); for(const m of matches) console.log(m.path,m.size);
+for(const m of matches){console.log('\n--- '+m.path+' ---\n'+readPath(m.path).slice(0,20000));}
+fs.closeSync(fd);
